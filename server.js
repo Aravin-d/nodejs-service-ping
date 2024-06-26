@@ -9,9 +9,9 @@ import { config } from "dotenv";
 config();
 const app = express();
 const { USER, PASSWORD, PORT, DBNAME, HOST, DBPORT } = process.env;
-console.log(process.env.PASSWORD);
 
 const ipAddr = await getIp();
+const pingNum = 2;
 
 //connection creds to db
 const client = new pg.Client({
@@ -53,7 +53,7 @@ async function pingIp(ip) {
   try {
     const startTime = new Date();
     const result = await ping.promise.probe(ip, {
-      extra: ["-n", "2"],
+      extra: ["-n", `${pingNum}`],
     });
     const endTime = new Date();
 
@@ -69,7 +69,7 @@ async function saveDb(ip, isp, pingData) {
   try {
     console.log("working in saveDB", pingData.endTime);
     const query = `
-        INSERT INTO network_stats (ip_addr, isp, start_time, end_time, min, max, avg, packet_loss) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
+        INSERT INTO network_stats (ip_addr, isp, start_time, end_time, min, max, avg, packet_loss, num_pings) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
     const values = [
       ip,
       isp,
@@ -79,6 +79,7 @@ async function saveDb(ip, isp, pingData) {
       pingData.result.max,
       pingData.result.avg,
       pingData.result.packetLoss,
+      pingNum
     ];
 
     await client.query(query, values);
